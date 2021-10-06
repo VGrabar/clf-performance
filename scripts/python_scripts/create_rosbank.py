@@ -65,7 +65,8 @@ def main(dataset_name: str, percentage: str):
     transactions = pd.read_csv("data/" + dataset_name + "/original/train.csv")
     full_len = len(transactions)
     # filter out observations
-    transactions = transactions.sort_values(by=["TRDATETIME"])
+    transactions['PERIOD_DATETIME']=pd.to_datetime(transactions['PERIOD'])
+    transactions = transactions.sort_values(by=["PERIOD_DATETIME"])
     # splitting train and test by transaction time
     train_transactions = transactions[: int(full_len * int(percentage) / 100)]
     test_transactions = transactions[int(full_len * int(percentage) / 100) :]
@@ -87,18 +88,12 @@ def main(dataset_name: str, percentage: str):
     test_target_data = test_target_data.rename(columns={"cl_id": "client_id", "target_flag": "bins"})
 
     # change transaction to numbers
+    keys = np.unique(transactions.MCC)
+    new_values = np.arange(0, len(keys), dtype=int)
+    dictionary = dict(zip(keys, new_values))
     for dataset in [train_data, test_data]:
-        keys = np.unique(dataset.small_group)
-        new_values = np.arange(0, len(keys), dtype=int)
-        dictionary = dict(zip(keys, new_values))
         new_column = [dictionary[key] for key in list(dataset.small_group)]
         dataset.small_group = new_column
-    # change transaction to numbers
-    # keys = np.unique(test_data.small_group)
-    # new_values = np.arange(0, len(keys), dtype=int)
-    # dictionary = dict(zip(keys, new_values))
-    # new_column = [dictionary[key] for key in list(data.small_group)]
-    # test_data.small_group = new_column
 
     train_target_data = train_target_data.dropna(subset=["bins"])
     test_target_data = test_target_data.dropna(subset=["bins"])
