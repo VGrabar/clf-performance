@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 
-#for dataset_name in "rosbank" "age" "gender"; do
-for dataset_name in "age"; do
+#declare -a DataSets=("age" "gender" "gender_tinkoff" "age_tinkoff" "rosbank")
+declare -a DataSets=("gender_tinkoff" "age_tinkoff")
+
+for dataset_name in ${DataSets[@]}; do
 	rm -rf ./presets/${dataset_name}/vocabs/100_quantile
 	rm -rf ./presets/${dataset_name}/discretizers/100_quantile
 	rm -rf ./presets/${dataset_name}/discretizers/50_quantile

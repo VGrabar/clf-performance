@@ -2,8 +2,8 @@ mkdir ./experiments
 mkdir ./experiments/trained_models/
 mkdir ./experiments/trained_models/clf/
 
-#declare -a DataSets=("age" "age_short" "age_tinkoff" "rosbank")
-declare -a DataSets=("rosbank" "gender")
+#declare -a DataSets=("age" "gender" "gender_tinkoff" "age_tinkoff" "rosbank")
+declare -a DataSets=("gender_tinkoff" "age_tinkoff")
 declare -a ModelTypes=("gru_with_amounts" "lstm_with_amounts" "cnn_with_amounts")
 
 for dataset_name in ${DataSets[@]}; do
