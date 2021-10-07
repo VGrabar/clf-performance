@@ -41,7 +41,7 @@ def create_set(name, data, target, period: bool):
                         "client_id": int(client_id),
                     }
                     if period:
-                        loc_dict["period"] = list(loc_data.transaction_period)
+                        loc_dict["period"] = list(loc_data.PERIOD)
                     writer.write(loc_dict)
 
     return
@@ -59,11 +59,14 @@ def split_data(dir_, data, target_data, period: bool):
     return
 
 
-def main(dataset_name: str, percentage: str):
+def main(percentage: str):
 
-    # dataset_name = "rosbank"
-    transactions = pd.read_csv("data/" + dataset_name + "/original/train.csv")
+    transactions = pd.read_csv("data/rosbank/original/train.csv")
+    transactions = transactions.rename(
+            columns={"cl_id": "client_id", "MCC": "small_group", "amount": "amount_rur", "target_flag": "bins"}
+    )
     full_len = len(transactions)
+    print(transactions["bins"].describe())
     # filter out observations
     transactions['PERIOD_DATETIME']=pd.to_datetime(transactions['PERIOD'])
     transactions = transactions.sort_values(by=["PERIOD_DATETIME"])
@@ -71,27 +74,19 @@ def main(dataset_name: str, percentage: str):
     train_transactions = transactions[: int(full_len * int(percentage) / 100)]
     test_transactions = transactions[int(full_len * int(percentage) / 100) :]
 
-    train_target_data = train_transactions[["cl_id", "target_flag"]]
+    train_target_data = train_transactions[["client_id", "bins"]]
     train_target_data = train_target_data.drop_duplicates()
     train_target_data.reset_index(drop=True, inplace=True)
-    test_target_data = test_transactions[["cl_id", "target_flag"]]
+    test_target_data = test_transactions[["client_id", "bins"]]
     test_target_data = test_target_data.drop_duplicates()
     test_target_data.reset_index(drop=True, inplace=True)
 
-    train_data = train_transactions.rename(
-        columns={"cl_id": "client_id", "MCC": "small_group", "amount": "amount_rur"}
-    )
-    train_target_data = train_target_data.rename(columns={"cl_id": "client_id", "target_flag": "bins"})
-    test_data = test_transactions.rename(
-        columns={"PERIOD": "transaction_period", "cl_id": "client_id", "MCC": "small_group", "amount": "amount_rur"}
-    )
-    test_target_data = test_target_data.rename(columns={"cl_id": "client_id", "target_flag": "bins"})
 
     # change transaction to numbers
-    keys = np.unique(transactions.MCC)
+    keys = np.unique(transactions.small_group)
     new_values = np.arange(0, len(keys), dtype=int)
     dictionary = dict(zip(keys, new_values))
-    for dataset in [train_data, test_data]:
+    for dataset in [train_transactions, test_transactions]:
         new_column = [dictionary[key] for key in list(dataset.small_group)]
         dataset.small_group = new_column
 
@@ -99,9 +94,9 @@ def main(dataset_name: str, percentage: str):
     test_target_data = test_target_data.dropna(subset=["bins"])
 
     print("Creating test set...")
-    create_set("data/" + dataset_name + "/test.jsonl", test_data, test_target_data, period=True)
+    create_set("data/rosbank/test.jsonl", test_transactions, test_target_data, period=True)
     print("")
-    split_data("data/" + dataset_name, train_data, train_target_data, period=False)
+    split_data("data/rosbank", train_transactions, train_target_data, period=False)
 
     return
 

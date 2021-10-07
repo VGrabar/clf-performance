@@ -19,7 +19,7 @@ def split_slice_subsample(sub_data, cnt_min, cnt_max, split_count):
     return sub_datas
 
 
-def create_set(name, data, target):
+def create_set(name, data, target, period: bool=False):
     len_ = len(np.unique(target.client_id))
     dict_data = {}
     with jsonlines.open(name, "w") as writer:
@@ -33,11 +33,13 @@ def create_set(name, data, target):
                                 "amounts": list(loc_data.amount_rur),
                                 "label": int(sub_data_target.bins),
                                 "client_id": int(client_id)}
+                    if period:
+                        loc_dict["period"] = list(loc_data.trans_date)
                     writer.write(loc_dict) 
                 
     return
 
-def split_data(data, target_data, dir_):
+def split_data(dir_, data, target_data, period: bool=False):
     target_data_train, target_data_valid = train_test_split(target_data, test_size=0.2, random_state=10, shuffle=True)
     print('Create train set...')
     create_set(dir_+'/'+'train.jsonl', data, target_data_train)
@@ -46,20 +48,31 @@ def split_data(data, target_data, dir_):
     return
 
 
-def main():
+def main(percentage: str):
     
-    data = pd.read_csv('../data/age/original/transactions_train.csv')
-    target_data = pd.read_csv('../data/age/original/train_target.csv')
+    transactions = pd.read_csv('data/age/original/transactions_train.csv')
+    target_data = pd.read_csv('data/age/original/train_target.csv')
+    data = pd.merge(transactions, target_data, on='client_id')
     
-    target_data_test_sub, target_data_targetclf = train_test_split(target_data, test_size=0.65, random_state=10, shuffle=True)
-    target_data_subclf, target_data_test = train_test_split(target_data_test_sub, test_size=2./7, random_state=10, shuffle=True)
+    # leave out test set
+    full_len = len(data)
+    # splitting train and test by transaction time
+    data = data.sort_values(by=["trans_date"])
+    train_data = data[: int(full_len * int(percentage) / 100)]
+    test_data = data[int(full_len * int(percentage) / 100) :]
+    #
+    print(data["bins"].describe())
+    train_target_data = train_data[["client_id", "bins"]]
+    train_target_data = train_target_data.drop_duplicates()
+    train_target_data.reset_index(drop=True, inplace=True)
+    test_target_data = test_data[["client_id", "bins"]]
+    test_target_data = test_target_data.drop_duplicates()
+    test_target_data.reset_index(drop=True, inplace=True)
     
-    print('Create test set...')
-    create_set('../data/age/test.jsonl', data, target_data_test)
+    print('Creating test set...')
+    create_set('data/age/test.jsonl', test_data, test_target_data, period=True)
     print('')
-    split_data(data, target_data, '../data/age/lm')
-    split_data(data, target_data_subclf, '../data/age/substitute_clf')
-    split_data(data, target_data_targetclf, '../data/age/target_clf')
+    split_data('data/age', train_data, train_target_data)
     
     
     return

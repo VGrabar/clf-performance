@@ -44,7 +44,7 @@ def create_set(name, data, target, period: bool=False):
     return
 
 
-def split_data(data, target_data, dir_, period: bool=False):
+def split_data(dir_, data, target_data,  period: bool=False):
     target_data_train, target_data_valid = train_test_split(target_data, test_size=0.2, random_state=10, shuffle=True)
     print('Create train set...')
     create_set(dir_+'/'+'train.jsonl', data, target_data_train, period)
@@ -63,11 +63,12 @@ def main(percentage: str):
     data = pd.merge(transactions, target_data, on='customer_id')
     data = data.rename(columns={'customer_id': 'client_id', 'trans':'small_group', 'amount':'amount_rur', 'gender': 'bins'})
     full_len = len(data)
-    # filter out observations
-    data = data.sort_values(by=["tr_datetime"])
+    print(data["bins"].describe())
     # splitting train and test by transaction time
+    data = data.sort_values(by=["tr_datetime"])
     train_data = data[: int(full_len * int(percentage) / 100)]
     test_data = data[int(full_len * int(percentage) / 100) :]
+    
     train_target_data = train_data[["client_id", "bins"]]
     train_target_data = train_target_data.drop_duplicates()
     train_target_data.reset_index(drop=True, inplace=True)
@@ -92,7 +93,7 @@ def main(percentage: str):
     print('Creating test set...')    
     create_set('./data/gender/test.jsonl', test_data, test_target_data, period=True)
     print('')
-    split_data(train_data, train_target_data, './data/gender')
+    split_data('./data/gender', train_data, train_target_data)
     
     
     return
