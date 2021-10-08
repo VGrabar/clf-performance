@@ -67,7 +67,7 @@ def main(percentage: str):
             "customer_id": "client_id",
             "merchant_mcc": "small_group",
             "transaction_amt": "amount_rur",
-            "age": "bins",
+            "gender_cd": "bins",
         }
     )
     # change transaction to numbers
@@ -77,9 +77,10 @@ def main(percentage: str):
     new_column = [dictionary[key] for key in list(data.small_group)]
     data.small_group = new_column
     # recode gender to bins
+    data = data.dropna(subset=["bins"])
     dict_gender = {"M": 0, "F": 1}
     bins_new = [dict_gender[key] for key in list(data.bins)]
-    target_data.bins = bins_new
+    data.bins = bins_new
     # leave out test set
     full_len = len(data)
     # splitting train and test by transaction time
@@ -93,8 +94,8 @@ def main(percentage: str):
     test_target_data = test_target_data.drop_duplicates()
     test_target_data.reset_index(drop=True, inplace=True)
 
-    train_target_data = train_target_data.dropna(subset=["bins"])
-    test_target_data = train_target_data.dropna(subset=["bins"])
+    #train_target_data = train_target_data.dropna(subset=["bins"])
+    #test_target_data = train_target_data.dropna(subset=["bins"])
 
     print("Creating test set...")
     create_set("./data/" + dataset_name + "/test.jsonl", test_data, test_target_data, period=True)

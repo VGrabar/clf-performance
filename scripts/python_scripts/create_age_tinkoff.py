@@ -72,6 +72,8 @@ def main(percentage: str):
 
     transactions = pd.read_csv("./data/" + dataset_name + "/original/transactions.csv")
     target_data = pd.read_csv("./data/" + dataset_name + "/original/customer_train.csv")
+    print(transactions.head)
+    print(target_data.head)
     data = pd.merge(transactions, target_data, on="customer_id")
 
     data = data.sort_values(by=["transaction_month", "transaction_day"])
@@ -90,6 +92,7 @@ def main(percentage: str):
     new_column = [dictionary[key] for key in list(data.small_group)]
     data.small_group = new_column
     # recode age to bing
+    data = data.dropna(subset=["bins"])
     bins_new = [age_rule(key) for key in list(data.bins)]
     data.bins = bins_new
     # leave out test set
@@ -105,8 +108,8 @@ def main(percentage: str):
     test_target_data = test_target_data.drop_duplicates()
     test_target_data.reset_index(drop=True, inplace=True)
 
-    train_target_data = train_target_data.dropna(subset=["bins"])
-    test_target_data = train_target_data.dropna(subset=["bins"])
+    #train_target_data = train_target_data.dropna(subset=["bins"])
+    #test_target_data = train_target_data.dropna(subset=["bins"])
 
     print("Creating test set...")
     create_set("data/" + dataset_name + "/test.jsonl", test_data, test_target_data, period=True)
