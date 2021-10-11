@@ -51,7 +51,8 @@ def create_test_sets(folder_name, data, target):
     """
     periods = np.unique(data.PERIOD)
     # sort periods by month-year
-    periods.sort(key=lambda x: x.split("/")[2] + x.split("/")[1])
+    print(periods)
+    periods = sorted(periods, key=lambda x: x.split("/")[2] + x.split("/")[1])
     print(periods)
     history = []
     for month in periods:
