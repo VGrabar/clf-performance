@@ -45,16 +45,21 @@ def create_set(name, data, target):
     return
 
 
-def create_plot_sets(folder_name, data, target):
+def create_test_sets(folder_name, data, target):
     """
     Splits total data by periods
     """
     periods = np.unique(data.PERIOD)
+    # sort periods by month-year
+    periods.sort(key=lambda x: x.split("/")[2] + x.split("/")[1])
+    print(periods)
+    history = []
     for month in periods:
         print(month)
         day_month_year = month.split("/")
         month_name = day_month_year[2] + day_month_year[1]
-        period_data = data[data["PERIOD"] == month]
+        history.append(month)
+        period_data = data[data["PERIOD"].isin(history)]
 
         dict_data = {}
         with jsonlines.open(folder_name + "/test_" + month_name + ".json", "w") as writer:
@@ -121,7 +126,7 @@ def main(percentage: str):
     plot_target_data = plot_target_data.dropna(subset=["bins"])
 
     print("Creating test sets...")
-    create_plot_sets("data/rosbank/test", transactions, plot_target_data)
+    create_test_sets("data/rosbank/test", transactions, plot_target_data)
     print("Creating train-validations sets...")
     split_data("data/rosbank", train_transactions, train_target_data)
 
