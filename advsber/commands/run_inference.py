@@ -7,6 +7,7 @@ import numpy as np
 from allennlp.predictors import Predictor
 from allennlp.models.archival import load_archive
 from sklearn.metrics import precision_recall_fscore_support
+from more_itertools import sliced
 
 from advsber.utils.data import load_jsonlines
 from advsber.utils.metrics import (
@@ -34,9 +35,11 @@ def main(
     data_list.sort()
     metrics = {}
 
-    for data_path in data_list:
+    for i, data_path in enumerate(data_list):
         output = load_jsonlines(data_path)
         output = pd.DataFrame(output)
+        if i == 0:
+            chunk_size = len(output)
         # remove duplicates
         # output = output[~output.astype(str).duplicated()]
         # output = output.drop_duplicates()
@@ -45,12 +48,19 @@ def main(
         period_name = period_name.split("_")[-1]
         print(f"period name:{period_name}")
         metrics[period_name] = {}
+        preds = []
         if model_path is not None:
             predictor = get_predictor(model_path)
-            data = [
-                {"transactions": row["transactions"], "amounts": row["amounts"]} for index, row in output.iterrows()
-            ]
-            preds = predictor.predict_batch_json(data)
+            index_slices = sliced(range(len(output)), chunk_size)
+            for index_slice in index_slices:
+                print("chunk:", len(index_slice))
+                chunk = output.iloc[index_slice]
+                data = [
+                    {"transactions": row["transactions"], "amounts": row["amounts"]} for index, row in chunk.iterrows()
+                ]
+                curr_preds = predictor.predict_batch_json(data)
+                preds.extend(curr_preds)
+                print(len(preds))
 
         cross_entropy = []
         pred_labels = []
