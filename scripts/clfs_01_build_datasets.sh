@@ -10,6 +10,20 @@ mkdir data/rosbank/test
 wget --load-cookies /tmp/cookies.txt "https://docs.google.com/uc?export=download&confirm=$(wget --quiet --save-cookies /tmp/cookies.txt --keep-session-cookies --no-check-certificate 'https://docs.google.com/uc?export=download&id=1gVprY6E6jK_VZHFxkOXSuLjPqDTYog7t' -O- | sed -rn 's/.*confirm=([0-9A-Za-z_]+).*/\1\n/p')&id=1gVprY6E6jK_VZHFxkOXSuLjPqDTYog7t" -O 'data/rosbank/original/train.csv' && rm -rf /tmp/cookies.txt
 
 PYTHONPATH=. python scripts/python_scripts/create_rosbank.py $RATIO
+# remove duplicate lines
+for filename in data/rosbank/test/*.jsonl; do
+    sort ${filename} | uniq > temp.jsonl
+    rm ${filename}
+    mv temp.jsonl ${filename}
+done
+
+for filename in "train" "valid"; do
+    sort data/rosbank/${filename}.jsonl | uniq > temp.jsonl
+    rm data/rosbank/${filename}.jsonl 
+    mv temp.jsonl data/rosbank/${filename}.jsonl 
+done
+
+
 # gender
 #rm -rf ./data/gender
 #mkdir ./data/gender
