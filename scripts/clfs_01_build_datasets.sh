@@ -23,6 +23,7 @@ for filename in "train" "valid"; do
     mv temp.jsonl data/rosbank/${filename}.jsonl 
 done
 
+rm data/rosbank/201804.jsonl data/rosbank/201804.csv
 
 # gender
 #rm -rf ./data/gender

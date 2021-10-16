@@ -109,8 +109,14 @@ def create_all_sets(folder_name, data, target, threshold_period):
             train_csv_name = os.path.join(folder_name, "train.csv")
             valid_jsonl_name = os.path.join(folder_name, "valid.jsonl")
             valid_csv_name = os.path.join(folder_name, "valid.csv")
+            test_jsonl_name = os.path.join(folder_name, "test.jsonl")
+            test_csv_name = os.path.join(folder_name, "test.csv")
+            # train
             write_data(train_jsonl_name, train_csv_name, period_data, target_data_train)
+            # validation
             write_data(valid_jsonl_name, valid_csv_name, period_data, target_data_valid)
+            # test = train and validation
+            write_data(test_jsonl_name, test_csv_name, period_data, target)
 
     return
 

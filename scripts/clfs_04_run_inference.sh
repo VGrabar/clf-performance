@@ -9,6 +9,6 @@ for dataset_name in ${DataSets[@]}; do
     for config_name in ${ModelTypes[@]}; do
         SAVE_PATH=./data/${dataset_name}/plot_${config_name}.json
         MODEL_PATH=./presets/${dataset_name}/models/clf/${config_name}.tar.gz
-        PYTHONPATH=. python advsber/commands/run_inference.py ${DATA_PATH} ${MODEL_PATH} ${SAVE_PATH}
+        PYTHONPATH=. python scripts/python_scripts/run_inference.py ${DATA_PATH} ${MODEL_PATH} ${SAVE_PATH}
         done
     done
