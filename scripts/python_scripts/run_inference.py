@@ -1,13 +1,15 @@
-import json
 import glob
+import json
 import os
-import typer
-import pandas as pd
+
 import numpy as np
-from allennlp.predictors import Predictor
+import pandas as pd
+import typer
 from allennlp.models.archival import load_archive
-from sklearn.metrics import precision_recall_fscore_support, roc_auc_score, average_precision_score
+from allennlp.predictors import Predictor
 from more_itertools import sliced
+from sklearn.metrics import average_precision_score, precision_recall_fscore_support, roc_auc_score
+from sklearn.model_selection import GroupKFold
 
 from advsber.utils.data import load_jsonlines
 
@@ -60,8 +62,8 @@ def main(
 
         for pred_row in preds:
             lbl = int(pred_row["label"])
-            pred_labels.append(lbl)
             cross_entropy.append(-1 * pred_row["logits"][lbl])
+            pred_labels.append(lbl)
             pred_probs.append(pred_row["probs"][lbl])
 
         output["label"] = np.array(output["label"])
@@ -76,9 +78,22 @@ def main(
         metrics[period_name]["fscore"] = []
         metrics[period_name]["bce"] = []
         # y_score = clf.predict_proba(X)[:, 1]
+        print("yoyoy")
+        print(np.bincount(output["label"]))
+        skf = GroupKFold(n_splits=5)
+        for train, test in skf.split(output["label"], output["label"]):
+            print(
+                "train -  {}   |   test -  {}".format(
+                    np.bincount(output["label"][train]), np.bincount(output["label"][test])
+                )
+            )
+
         kfold = 5
         len_fold = len(output) // kfold
-        ind_folds = [list(range(i, i + len_fold)) for i in range(0, len(output), len_fold)]
+        ind_folds = [
+            list(range(i, i + len_fold)) if i + len_fold < len(output) else list(range(i, len(output)))
+            for i in range(0, len(output), len_fold)
+        ]
         for ind in ind_folds:
             print(ind)
             print(len(ind))

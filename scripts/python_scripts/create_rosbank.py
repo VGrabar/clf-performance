@@ -1,9 +1,9 @@
 import argparse
 import json
+import os
 from datetime import datetime
 
 import jsonlines
-import os
 import numpy as np
 import pandas as pd
 import typer
@@ -103,8 +103,10 @@ def create_all_sets(folder_name, data, target, threshold_period):
             print(f"threshold period for train: {threshold_period}")
             print("Creating train-valid sets")
             target_data_train, target_data_valid = train_test_split(
-                target, test_size=0.2, random_state=10, shuffle=True
+                target, test_size=0.2, random_state=10, shuffle=True, stratify=target["bins"]
             )
+            print(target_data_train.describe())
+            print(target_data_valid.describe())
             train_jsonl_name = os.path.join(folder_name, "train.jsonl")
             train_csv_name = os.path.join(folder_name, "train.csv")
             valid_jsonl_name = os.path.join(folder_name, "valid.jsonl")

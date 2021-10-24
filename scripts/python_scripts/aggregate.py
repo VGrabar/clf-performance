@@ -1,8 +1,8 @@
-from pathlib import Path
 import json
+from pathlib import Path
 
-import typer
 import pandas as pd
+import typer
 
 
 def main(results_path: Path, filename: str = "metrics.json"):

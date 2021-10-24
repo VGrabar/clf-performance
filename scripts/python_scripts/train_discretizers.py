@@ -1,9 +1,10 @@
-import typer
 import pickle
+
 import numpy as np
+import typer
+from sklearn.preprocessing import KBinsDiscretizer
 
 from advsber.utils.data import load_jsonlines
-from sklearn.preprocessing import KBinsDiscretizer
 
 
 def main(dataset_name: str):

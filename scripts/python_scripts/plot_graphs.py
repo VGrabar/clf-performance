@@ -1,8 +1,8 @@
-import matplotlib.pyplot as plt
-import json
 import glob
-import numpy as np
+import json
 
+import matplotlib.pyplot as plt
+import numpy as np
 
 plt.style.use(["science", "no-latex"])
 plot_folder = glob.glob("data/rosbank/*.json")
@@ -39,6 +39,15 @@ for plot in plot_folder:
     # plot
     fig, ax = plt.subplots(nrows=1, ncols=1)
     # ax.plot(months, precision, "b-", label="precision")
+    for metric in [ap, roc_auc, bce]:
+        for l in metric:
+            if len(l) != 5:
+                print(len(l))
+                if len(l) == 4:
+                    l.append(l[-1])
+    # ap = np.array([np.array(x) for x in ap])
+    # print(ap.shape)
+    # print(np.mean(ap, axis=1))
     ax.errorbar(
         months,
         np.mean(ap, axis=1),
