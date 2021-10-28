@@ -9,6 +9,7 @@ from allennlp.models.archival import load_archive
 from allennlp.predictors import Predictor
 from sklearn.metrics import average_precision_score, precision_recall_fscore_support, roc_auc_score
 from sklearn.model_selection import GroupKFold
+from more_itertools import sliced
 
 from advsber.utils.data import load_jsonlines
 
@@ -32,29 +33,29 @@ def main(
         output = load_jsonlines(data_path)
         output = pd.DataFrame(output)
         if i == 0:
-            data_prev = []
-            preds = []
-
-        period_name = data_path.split("/")[-1]
-        period_name = period_name.split(".")[0]
-        # period_name = period_name.split("_")[-1]
-        print(f"period name:{period_name}")
-        metrics[period_name] = {}
-        if model_path is not None:
-            predictor = get_predictor(model_path)
-            data = [
-                {"transactions": row["transactions"], "amounts": row["amounts"]} for index, row in output.iterrows()
-            ]
-            curr_data = [d for d in data if (d not in data_prev)]
-            curr_preds = predictor.predict_batch_json(curr_data)
-            print("curr: ", len(curr_preds))
-            data_prev = data
-            preds.extend(curr_preds)
-            print("total: ", len(preds))
-
+            chunk_size = len(output)
+        preds = []
         cross_entropy = []
         pred_labels = []
         pred_probs = []
+        gt_labels = output["label"].tolist()
+
+        period_name = data_path.split("/")[-1]
+        period_name = period_name.split(".")[0]
+        print(f"period name:{period_name}")
+        metrics[period_name] = {}
+        index_slices = sliced(range(len(output)), chunk_size)
+        if model_path is not None:
+            predictor = get_predictor(model_path)
+            k = 0
+            for index_slice in index_slices:
+                k += len(index_slice)
+                print(f"curr:{k} out of {len(output)}")
+                curr_data = [
+                    {"transactions": row["transactions"], "amounts": row["amounts"]} for index, row in output.iloc[index_slice].iterrows()]
+                curr_preds = predictor.predict_batch_json(curr_data)
+                preds.extend(curr_preds)
+
 
         for pred_row in preds:
             lbl = int(pred_row["label"])
@@ -62,10 +63,8 @@ def main(
             pred_labels.append(lbl)
             pred_probs.append(pred_row["probs"][lbl])
 
-        gt_labels = np.array(output["label"])
-        cross_entropy = np.array(cross_entropy)
-        pred_labels = np.array(pred_labels)
-        pred_probs = np.array(pred_probs)
+        print("gt:",len(gt_labels))
+        print("pred:",len(pred_labels))
         # splitting by folds
         metrics[period_name]["roc_auc"] = []
         metrics[period_name]["average_precision"] = []
@@ -82,10 +81,9 @@ def main(
         ind_folds = np.array_split(random_range, kfold)
 
         for ind in ind_folds:
-            print(len(ind))
-            curr_labels = gt_labels[ind]
-            curr_pred_labels = pred_labels[ind]
-            curr_pred_probs = pred_probs[ind]
+            curr_labels = np.array(gt_labels)[ind]
+            curr_pred_labels = np.array(pred_labels)[ind]
+            curr_pred_probs = np.array(pred_probs)[ind]
             scores = precision_recall_fscore_support(curr_labels, curr_pred_labels, pos_label=1, average="binary")
 
             metrics[period_name]["roc_auc"].append(roc_auc_score(curr_labels, curr_pred_probs, average="macro"))
@@ -95,7 +93,7 @@ def main(
             metrics[period_name]["precision"].append(scores[0])
             metrics[period_name]["recall"].append(scores[1])
             metrics[period_name]["fscore"].append(scores[2])
-            bce = cross_entropy[ind].sum() / len(ind)
+            bce = np.array(cross_entropy)[ind].sum() / len(ind)
             metrics[period_name]["bce"].append(bce)
 
     with open(save_path, "w") as f:
