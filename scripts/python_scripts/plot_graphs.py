@@ -13,7 +13,7 @@ for plot in plot_folder:
     with open(plot, "r") as f:
         metrics = json.load(f)
 
-    months = []
+    periods = []
     precision = []
     recall = []
     fscore = []
@@ -21,7 +21,7 @@ for plot in plot_folder:
     roc_auc = []
     bce = []
     for key, value in metrics.items():
-        months.append(key)
+        periods.append(key)
         precision.append(value["precision"])
         recall.append(value["recall"])
         fscore.append(value["fscore"])
@@ -29,27 +29,18 @@ for plot in plot_folder:
         roc_auc.append(value["roc_auc"])
         bce.append(value["bce"])
     # sort
-    indices = sorted(range(len(months)), key=months.__getitem__)
+    indices = sorted(range(len(periods)), key=periods.__getitem__)
     for arr in [precision, recall, fscore, ap, roc_auc, bce]:
-        zipped_lists = zip(months, arr)
+        zipped_lists = zip(periods, arr)
         sorted_zipped_lists = sorted(zipped_lists)
         # sort by first element of each pair
         arr = [element for _, element in sorted_zipped_lists]
-    months = sorted(months)
+    periods = sorted(periods)
     # plot
     fig, ax = plt.subplots(nrows=1, ncols=1)
-    # ax.plot(months, precision, "b-", label="precision")
-    for metric in [ap, roc_auc, bce]:
-        for l in metric:
-            if len(l) != 5:
-                print(len(l))
-                if len(l) == 4:
-                    l.append(l[-1])
-    # ap = np.array([np.array(x) for x in ap])
-    # print(ap.shape)
-    # print(np.mean(ap, axis=1))
+
     ax.errorbar(
-        months,
+        periods,
         np.mean(ap, axis=1),
         yerr=np.std(ap, axis=1),
         linestyle="-",
@@ -60,7 +51,7 @@ for plot in plot_folder:
         label="average precision",
     )
     ax.errorbar(
-        months,
+        periods,
         np.mean(roc_auc, axis=1),
         yerr=np.std(roc_auc, axis=1),
         linestyle="-",
@@ -71,7 +62,7 @@ for plot in plot_folder:
         label="roc auc",
     )
     ax.errorbar(
-        months,
+        periods,
         np.mean(bce, axis=1),
         yerr=np.std(bce, axis=1),
         linestyle="-",
@@ -81,11 +72,12 @@ for plot in plot_folder:
         capthick=2,
         label="cross-entropy",
     )
+    # threshold line - dataset specific
     ax.axvline(x="201702", ymin=0, ymax=1, linestyle="--")
     ax.legend()
-    ax.set_xlabel("month")
+    ax.set_xlabel("period")
     # ax.set_xticklabels([""] * len(months))
-    lab_names = [str(m[:4] + "_" + m[4:]) for m in months]
+    lab_names = [str(p) for p in periods]
     ax.set_xticklabels(lab_names, rotation=45, fontsize=8)
     method_name = plot.split(".")[0]
     method_name = method_name.split("/")[-1]
