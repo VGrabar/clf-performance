@@ -88,7 +88,8 @@ def create_all_sets(folder_name, data, target, threshold_period):
         period_name = str(per)
         # cumulative history
         history.append(per)
-        period_data = data[data["PERIOD"].isin(history)]
+        #period_data = data[data["PERIOD"].isin(history)]
+        period_data = data[data["PERIOD"] == per]
         test_jsonl_name = os.path.join(folder_name, "test", period_name + ".jsonl")
         test_csv_name = os.path.join(folder_name, "test", period_name + ".csv")
         write_data(test_jsonl_name, test_csv_name, period_data, target)

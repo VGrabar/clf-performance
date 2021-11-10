@@ -44,7 +44,7 @@ def main(
         period_name = period_name.split(".")[0]
         print(f"period name:{period_name}")
         metrics[period_name] = {}
-        index_slices = sliced(range(len(output)), chunk_size)
+        index_slices = sliced(range(len(output)), chunk_size//8)
         if model_path is not None:
             predictor = get_predictor(model_path)
             k = 0
@@ -59,7 +59,8 @@ def main(
 
         for pred_row in preds:
             lbl = int(pred_row["label"])
-            cross_entropy.append(-1 * pred_row["logits"][lbl])
+            c_e_loss = sum(-x*y for x, y in list(zip(pred_row["logits"], pred_row["probs"]))) 
+            cross_entropy.append(c_e_loss)
             pred_labels.append(lbl)
             pred_probs.append(pred_row["probs"][lbl])
 
@@ -72,7 +73,6 @@ def main(
         metrics[period_name]["recall"] = []
         metrics[period_name]["fscore"] = []
         metrics[period_name]["bce"] = []
-        # y_score = clf.predict_proba(X)[:, 1]
         print("labels distr:")
         print(np.bincount(gt_labels))
 
@@ -85,11 +85,14 @@ def main(
             curr_pred_labels = np.array(pred_labels)[ind]
             curr_pred_probs = np.array(pred_probs)[ind]
             scores = precision_recall_fscore_support(curr_labels, curr_pred_labels, pos_label=1, average="binary")
+            #scores = precision_recall_fscore_support(curr_labels, curr_pred_labels, average="weighted")
 
             metrics[period_name]["roc_auc"].append(roc_auc_score(curr_labels, curr_pred_probs, average="macro"))
+            #metrics[period_name]["roc_auc"].append(roc_auc_score(curr_labels, curr_pred_probs, multi_class="ovo",average="weighted"))
             metrics[period_name]["average_precision"].append(
                 average_precision_score(curr_labels, curr_pred_probs, average="macro", pos_label=1)
             )
+            metrics[period_name]["average_precision"].append([0])
             metrics[period_name]["precision"].append(scores[0])
             metrics[period_name]["recall"].append(scores[1])
             metrics[period_name]["fscore"].append(scores[2])

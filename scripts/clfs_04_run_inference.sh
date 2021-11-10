@@ -1,8 +1,6 @@
-
-
-declare -a DataSets=("rosbank" "gender_tinkoff" "gender") #  "age_tinkoff") 
+declare -a DataSets=("rosbank" "gender_tinkoff" "gender")
+#declare -a DataSets=("rosbank")
 declare -a ModelTypes=("gru_with_amounts" "lstm_with_amounts" "cnn_with_amounts")
-#declare -a ModelTypes=("gru_with_amounts")
 
 for dataset_name in ${DataSets[@]}; do
     DATA_PATH=./data/${dataset_name}/test

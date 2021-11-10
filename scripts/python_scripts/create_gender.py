@@ -91,7 +91,8 @@ def create_all_sets(folder_name, data, target, threshold_period):
         period_name = str(per)
         # cumulative history
         history.append(per)
-        period_data = data[data["PERIOD"].isin(history)]
+        period_data = data[data["PERIOD"] == per]
+        #period_data = data[data["PERIOD"].isin(history)]
         test_jsonl_name = os.path.join(folder_name, "test", period_name + ".jsonl")
         test_csv_name = os.path.join(folder_name, "test", period_name + ".csv")
         write_data(test_jsonl_name, test_csv_name, period_data, target)
@@ -124,7 +125,7 @@ def main(percentage: str):
 
     transactions = pd.read_csv("./data/gender/original/transactions.csv")
     target_data = pd.read_csv("./data/gender/original/gender_train.csv")
-
+    print(transactions.head())
     transactions.term_id = transactions.term_id.fillna("UNK")
     transactions["trans"] = "mcc" + transactions["mcc_code"].astype(str)
     data = pd.merge(transactions, target_data, on="customer_id")
