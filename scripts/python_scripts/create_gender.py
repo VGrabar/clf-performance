@@ -31,12 +31,10 @@ def write_data(jsonl_name, csv_name, period_data, target):
         # features
         cl_ids = []
         bins_list = []
-        min_amount = []
-        max_amount = []
+        std_amount = []
         med_amount = []
         avg_amount = []
-        mode_mcc = []
-        last_mcc = []
+        perc_mcc = []
         for client_id in tqdm(np.unique(target.client_id)):
             sub_data = period_data[period_data["client_id"] == client_id]
             sub_data_target = target[target["client_id"] == client_id]
@@ -47,28 +45,30 @@ def write_data(jsonl_name, csv_name, period_data, target):
                 bins_list.append(int(sub_data_target.bins))
                 med_amount.append(int(sub_data.amount_rur.median()))
                 avg_amount.append(float(sub_data.amount_rur.mean()))
-                min_amount.append(int(sub_data.amount_rur.min()))
-                max_amount.append(int(sub_data.amount_rur.max()))
-                mode_mcc.append(int(sub_data.small_group.mode()[0]))
-                last_mcc.append(int(sub_data.small_group.min()))
-                sub_datas = split_slice_subsample(sub_data, 25, 150, 30)
-                for loc_data in sub_datas:
-                    if len(loc_data.small_group) > 3:
-                        loc_dict = {
-                            "transactions": list(loc_data.small_group),
-                            "amounts": list(loc_data.amount_rur),
-                            "label": int(sub_data_target.bins),
-                            "client_id": int(client_id),
-                        }
-                        writer.write(loc_dict)
+                std_amount.append(int(sub_data.amount_rur.std()))
+                individual_ratio = [0] * 500
+                ind_sum = 0
+                for mcc in sub_data.small_group:
+                    ind_sum += 1
+                    individual_ratio[int(mcc)] += 1
+                individual_ratio = [i / ind_sum for i in individual_ratio]
+                perc_mcc.append(individual_ratio)
+                # sub_datas = split_slice_subsample(sub_data, 25, 150, 30)
+                # for loc_data in sub_datas:
+                #     if len(loc_data.small_group) > 3:
+                #         loc_dict = {
+                #             "transactions": list(loc_data.small_group),
+                #             "amounts": list(loc_data.amount_rur),
+                #             "label": int(sub_data_target.bins),
+                #             "client_id": int(client_id),
+                #         }
+                #         writer.write(loc_dict)
 
     df_data = {
-        "amounts_max": max_amount,
-        "amounts_min": min_amount,
+        "amounts_std": std_amount,
         "amounts_med": med_amount,
         "amounts_avg": avg_amount,
-        "mcc_mode": mode_mcc,
-        "mcc_last": last_mcc,
+        "mcc_ratios": perc_mcc,
         "label": bins_list,
         "client_id": cl_ids,
     }
@@ -92,7 +92,7 @@ def create_all_sets(folder_name, data, target, threshold_period):
         # cumulative history
         history.append(per)
         period_data = data[data["PERIOD"] == per]
-        #period_data = data[data["PERIOD"].isin(history)]
+        # period_data = data[data["PERIOD"].isin(history)]
         test_jsonl_name = os.path.join(folder_name, "test", period_name + ".jsonl")
         test_csv_name = os.path.join(folder_name, "test", period_name + ".csv")
         write_data(test_jsonl_name, test_csv_name, period_data, target)

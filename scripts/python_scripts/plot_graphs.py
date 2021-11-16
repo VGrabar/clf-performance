@@ -5,7 +5,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 plt.style.use(["science", "no-latex"])
-plot_folder = glob.glob("data/rosbank/*.json")
+dataset_name = "rosbank"
+plot_folder = glob.glob("data/" + dataset_name + "/*.json")
+threshold_dict = {"gender": "3", "rosbank": "201702", "gender_tinkoff": "27", "age_tinkoff": "27"}
+threshold = threshold_dict[dataset_name]
 
 for plot in plot_folder:
 
@@ -27,29 +30,30 @@ for plot in plot_folder:
         fscore.append(value["fscore"])
         ap.append(value["average_precision"])
         roc_auc.append(value["roc_auc"])
-        bce.append(value["bce"])
+        new_value = [-v for v in value["bce"]]
+        bce.append(new_value)
     # sort
-    indices = sorted(range(len(periods)), key=periods.__getitem__)
+
     for arr in [precision, recall, fscore, ap, roc_auc, bce]:
         zipped_lists = zip(periods, arr)
-        sorted_zipped_lists = sorted(zipped_lists)
+        sorted_zipped_lists = sorted(zipped_lists, key=lambda x: int(x[0]))
         # sort by first element of each pair
         arr = [element for _, element in sorted_zipped_lists]
-    periods = sorted(periods)
+    periods = sorted(periods, key=lambda x: int(x))
     # plot
     fig, ax = plt.subplots(nrows=1, ncols=1)
 
-    ax.errorbar(
-        periods,
-        np.mean(ap, axis=1),
-        yerr=np.std(ap, axis=1),
-        linestyle="-",
-        color="g",
-        fmt="o",
-        capsize=2,
-        capthick=2,
-        label="average precision",
-    )
+    # ax.errorbar(
+    #     periods,
+    #     np.mean(ap, axis=1),
+    #     yerr=np.std(ap, axis=1),
+    #     linestyle="-",
+    #     color="g",
+    #     fmt="o",
+    #     capsize=2,
+    #     capthick=2,
+    #     label="average precision",
+    # )
     ax.errorbar(
         periods,
         np.mean(roc_auc, axis=1),
@@ -73,7 +77,7 @@ for plot in plot_folder:
         label="cross-entropy",
     )
     # threshold line - dataset specific
-    ax.axvline(x="201702", ymin=0, ymax=1, linestyle="--")
+    ax.axvline(x=threshold, ymin=0, ymax=1, linestyle="--")
     ax.legend()
     ax.set_xlabel("period")
     # ax.set_xticklabels([""] * len(months))
