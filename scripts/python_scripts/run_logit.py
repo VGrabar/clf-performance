@@ -1,75 +1,94 @@
 import glob
 import json
-
+import os
 import numpy as np
 import pandas as pd
+import typer
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import log_loss, precision_recall_fscore_support
-from sklearn.model_selection import train_test_split
+from sklearn.metrics import log_loss, accuracy_score, roc_auc_score
 from xgboost import XGBClassifier
 
-if __name__ == "__main__":
 
-    train_data_path = "data/rosbank/trainvalid.csv"
-    test_data_folder = "data/rosbank/test"
+def main(dataset_name: str, clf_type: str):
+
+    train_data_path = os.path.join("data", dataset_name, "test.csv")
+    test_data_folder = os.path.join("data", dataset_name, "test")
     test_data_list = glob.glob(test_data_folder + "/*.csv")
 
-    dataset = pd.read_csv(train_data_path, delimiter=",")
-    # categorical variables
-    dataset.drop(["Unnamed: 0"], axis=1, inplace=True)
-    cat_vars = ["mcc_last", "mcc_mode"]
-    for var in cat_vars:
-        cat_list = "var" + "_" + var
-        cat_list = pd.get_dummies(dataset[var], prefix=var)
-        data_new = dataset.join(cat_list)
-        dataset = data_new
-    dataset.drop(cat_vars, axis=1, inplace=True)
+    dataset = pd.read_csv(train_data_path, delimiter=",", converters={"mcc_ratios": pd.eval})
+    # normalize
+    unnorm_cols = ["amounts_std", "amounts_med", "amounts_avg"]
+    for feature_name in unnorm_cols:
+        max_value = dataset[feature_name].max()
+        min_value = dataset[feature_name].min()
+        dataset[feature_name] = (dataset[feature_name] - min_value) / (max_value - min_value)
+    # split list column
+    mcc_cols = ["mcc_" + str(i) for i in range(0, 500)]
+    split_df = pd.DataFrame(dataset["mcc_ratios"].tolist(), columns=mcc_cols)
+    dataset.drop(["mcc_ratios", "Unnamed: 0", "client_id"], axis=1, inplace=True)
+    dataset = pd.concat([dataset, split_df], axis=1)
+
     X = dataset.loc[:, dataset.columns != "label"]
     y = dataset.loc[:, dataset.columns == "label"]
-    # X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.05, random_state=23)
 
     # logreg
     logreg = LogisticRegression()
     logreg.fit(X, y)
     y_pred = logreg.predict(X)
-    print("Accuracy of logistic regression classifier on test set: {:.2f}".format(logreg.score(X, y)))
-    metrics = {}
-    for test_data_path in test_data_list:
-        period_name = test_data_path.split("/")[-1]
-        period_name = period_name.split(".")[0]
-        period_name = period_name.split("_")[-1]
-        print(f"period name: {period_name}")
-        metrics[period_name] = {}
-        dataset = pd.read_csv(test_data_path, delimiter=",")
-        dataset.drop(["Unnamed: 0"], axis=1, inplace=True)
-        # categorical variables
-        cat_vars = ["mcc_last", "mcc_mode"]
-        # for var in cat_vars:
-        #     cat_list = "var" + "_" + var
-        #     cat_list = pd.get_dummies(dataset[var], prefix=var)
-        #     data_new = dataset.join(cat_list)
-        #     dataset = data_new
-        data_new = dataset.join(cat_list)
-        dataset = data_new
-        dataset.drop(cat_vars, axis=1, inplace=True)
-        X_test = dataset.loc[:, dataset.columns != "label"]
-        y_true = dataset.loc[:, dataset.columns == "label"]
-        y_pred = logreg.predict(X_test)
-        y_probs = logreg.predict_proba(X)
-        bce_loss = metrics.log_loss(y_true, y_probs)
+    print("Accuracy of logistic regression classifier on train set: {:.2f}".format(logreg.score(X, y)))
+    # xgboost
+    xgbmodel = XGBClassifier()
+    xgbmodel.fit(X, y)
+    y_pred = xgbmodel.predict(X)
+    print("Accuracy of xgboost classifier on train set: {:.2f}".format(accuracy_score(y, y_pred)))
+    for model in ["logit", "xgboost"]:
+        metrics = {}
+        for test_data_path in test_data_list:
+            period_name = test_data_path.split("/")[-1]
+            period_name = period_name.split(".")[0]
+            period_name = period_name.split("_")[-1]
+            print(f"period name: {period_name}")
+            metrics[period_name] = {}
+            metrics[period_name]["roc_auc"] = []
+            dataset = pd.read_csv(test_data_path, delimiter=",", converters={"mcc_ratios": pd.eval})
+            # normalize
+            unnorm_cols = ["amounts_std", "amounts_med", "amounts_avg"]
+            for feature_name in unnorm_cols:
+                max_value = dataset[feature_name].max()
+                min_value = dataset[feature_name].min()
+                dataset[feature_name] = (dataset[feature_name] - min_value) / (max_value - min_value)
+            # split list column
+            mcc_cols = ["mcc_" + str(i) for i in range(0, 500)]
+            split_df = pd.DataFrame(dataset["mcc_ratios"].tolist(), columns=mcc_cols)
+            dataset.drop(["mcc_ratios", "Unnamed: 0", "client_id"], axis=1, inplace=True)
+            dataset = pd.concat([dataset, split_df], axis=1)
+            X_test = dataset.loc[:, dataset.columns != "label"]
+            y_true = dataset.loc[:, dataset.columns == "label"]
+            if model == "logit":
+                y_pred = logreg.predict(X_test)
+                y_probs = logreg.predict_proba(X_test)
+                if clf_type == "binary":
+                    y_probs = y_probs[:, 1]
+            elif model == "xgboost":
+                y_pred = xgbmodel.predict(X_test)
+                y_probs = xgbmodel.predict_proba(X_test)
+                if clf_type == "binary":
+                    y_probs = y_probs[:, 1]
 
-        scores = precision_recall_fscore_support(y_true.to_list(), y_pred, pos_label=1, average="binary")
+            print("Accuracy of " + model + " classifier on test set: {:.2f}".format(accuracy_score(y_true, y_pred)))
+            bce_loss = log_loss(y_true, y_probs)
+            metrics[period_name]["bce"] = bce_loss
 
-        metrics[period_name]["precision"] = scores[0]
-        metrics[period_name]["recall"] = scores[1]
-        metrics[period_name]["fscore"] = scores[2]
-        metrics[period_name]["bce"] = bce_loss
+            if clf_type == "binary":
+                metrics[period_name]["roc_auc"].append(roc_auc_score(y_true, y_probs, average="macro"))
+            else:
+                metrics[period_name]["roc_auc"].append(
+                    roc_auc_score(y_true, y_probs, multi_class="ovo", average="weighted")
+                )
 
-    with open("data/rosbank/plot_logit.json", "w") as f:
-        json.dump(metrics, f, indent=4)
+        with open("data/rosbank/plot_" + model + ".json", "w") as f:
+            json.dump(metrics, f, indent=4)
 
-    # # xgboost
-    # model = XGBClassifier()
-    # model.fit(X_train, y_train)
-    # y_pred = model.predict(X_test)
-    # predictions = [round(value) for value in y_pred]
+
+if __name__ == "__main__":
+    typer.run(main)

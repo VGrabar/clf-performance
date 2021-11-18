@@ -1,0 +1,5 @@
+python3 scripts/python_scripts/run_logit.py "rosbank" "binary"
+python3 scripts/python_scripts/run_logit.py "gender_tinkoff" "binary"
+python3 scripts/python_scripts/run_logit.py "gender" "binary"
+python3 scripts/python_scripts/run_logit.py "age_tinkoff" "nonbinary"
+python3 scripts/python_scripts/run_logit.py "age" "nonbinary"
