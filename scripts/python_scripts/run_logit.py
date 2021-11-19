@@ -32,7 +32,7 @@ def main(dataset_name: str, clf_type: str):
     y = dataset.loc[:, dataset.columns == "label"]
 
     # logreg
-    logreg = LogisticRegression()
+    logreg = LogisticRegression(max_iter=1000)
     logreg.fit(X, y)
     y_pred = logreg.predict(X)
     print("Accuracy of logistic regression classifier on train set: {:.2f}".format(logreg.score(X, y)))
@@ -86,7 +86,7 @@ def main(dataset_name: str, clf_type: str):
                     roc_auc_score(y_true, y_probs, multi_class="ovo", average="weighted")
                 )
 
-        with open("data/rosbank/plot_" + model + ".json", "w") as f:
+        with open(os.path.join("data", dataset_name, "plot_" + model + ".json"), "w") as f:
             json.dump(metrics, f, indent=4)
 
 
