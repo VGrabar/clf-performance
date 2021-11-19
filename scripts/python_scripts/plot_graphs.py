@@ -6,8 +6,9 @@ import numpy as np
 
 plt.style.use(["science", "no-latex"])
 dataset_name = "rosbank"
-plot_folder = glob.glob("data/" + dataset_name + "/*.json")
-threshold_dict = {"gender": "3", "rosbank": "201702", "gender_tinkoff": "27", "age_tinkoff": "27"}
+# plot_folder = glob.glob("data/" + dataset_name + "/*.json")
+plot_folder = ["data/" + dataset_name + "/plot_xgboost.json", "data/" + dataset_name + "/plot_logit.json"]
+threshold_dict = {"age": 3, "gender": "3", "rosbank": "201702", "gender_tinkoff": "27", "age_tinkoff": "27"}
 threshold = threshold_dict[dataset_name]
 
 for plot in plot_folder:
@@ -25,16 +26,16 @@ for plot in plot_folder:
     bce = []
     for key, value in metrics.items():
         periods.append(key)
-        precision.append(value["precision"])
-        recall.append(value["recall"])
-        fscore.append(value["fscore"])
-        ap.append(value["average_precision"])
+        # precision.append(value["precision"])
+        # recall.append(value["recall"])
+        # fscore.append(value["fscore"])
+        # ap.append(value["average_precision"])
         roc_auc.append(value["roc_auc"])
-        new_value = [-v for v in value["bce"]]
+        new_value = [v for v in value["bce"]]
         bce.append(new_value)
     # sort
 
-    for arr in [precision, recall, fscore, ap, roc_auc, bce]:
+    for arr in [roc_auc, bce]:
         zipped_lists = zip(periods, arr)
         sorted_zipped_lists = sorted(zipped_lists, key=lambda x: int(x[0]))
         # sort by first element of each pair
@@ -65,6 +66,7 @@ for plot in plot_folder:
         capthick=2,
         label="roc auc",
     )
+    print(bce)
     ax.errorbar(
         periods,
         np.mean(bce, axis=1),

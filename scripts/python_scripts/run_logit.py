@@ -48,8 +48,6 @@ def main(dataset_name: str, clf_type: str):
             period_name = period_name.split(".")[0]
             period_name = period_name.split("_")[-1]
             print(f"period name: {period_name}")
-            metrics[period_name] = {}
-            metrics[period_name]["roc_auc"] = []
             dataset = pd.read_csv(test_data_path, delimiter=",", converters={"mcc_ratios": pd.eval})
             # normalize
             unnorm_cols = ["amounts_std", "amounts_med", "amounts_avg"]
@@ -76,15 +74,30 @@ def main(dataset_name: str, clf_type: str):
                     y_probs = y_probs[:, 1]
 
             print("Accuracy of " + model + " classifier on test set: {:.2f}".format(accuracy_score(y_true, y_pred)))
-            bce_loss = log_loss(y_true, y_probs)
-            metrics[period_name]["bce"] = bce_loss
 
-            if clf_type == "binary":
-                metrics[period_name]["roc_auc"].append(roc_auc_score(y_true, y_probs, average="macro"))
-            else:
-                metrics[period_name]["roc_auc"].append(
-                    roc_auc_score(y_true, y_probs, multi_class="ovo", average="weighted")
-                )
+            kfold = 5
+            random_range = np.random.permutation(len(y_pred))
+            ind_folds = np.array_split(random_range, kfold)
+            metrics[period_name] = {}
+            metrics[period_name]["roc_auc"] = []
+            metrics[period_name]["bce"] = []
+
+            for ind in ind_folds:
+                curr_labels = np.array(y_true)[ind]
+                curr_pred_labels = np.array(y_pred)[ind]
+                curr_pred_probs = np.array(y_probs)[ind]
+
+                if clf_type == "binary":
+                    metrics[period_name]["roc_auc"].append(
+                        roc_auc_score(curr_labels, curr_pred_probs, average="macro")
+                    )
+                else:
+                    metrics[period_name]["roc_auc"].append(
+                        roc_auc_score(curr_labels, curr_pred_probs, multi_class="ovo", average="weighted")
+                    )
+
+                bce_loss = log_loss(curr_labels, curr_pred_probs)
+                metrics[period_name]["bce"].append(bce_loss)
 
         with open(os.path.join("data", dataset_name, "plot_" + model + ".json"), "w") as f:
             json.dump(metrics, f, indent=4)
