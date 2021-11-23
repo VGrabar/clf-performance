@@ -94,6 +94,8 @@ def create_all_sets(folder_name, data, target, threshold_period):
         month_name = day_month_year[2] + day_month_year[1]
         # cumulative history
         history.append(month)
+        if month > threshold_period:
+            history.pop(0)
         # period_data = data[data["PERIOD"] == month]
         period_data = data[data["PERIOD"].isin(history)]
         test_jsonl_name = os.path.join(folder_name, "test", month_name + ".jsonl")

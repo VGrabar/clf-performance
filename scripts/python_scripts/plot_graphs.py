@@ -5,10 +5,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 plt.style.use(["science", "no-latex"])
-dataset_name = "rosbank"
-# plot_folder = glob.glob("data/" + dataset_name + "/*.json")
-plot_folder = ["data/" + dataset_name + "/plot_xgboost.json", "data/" + dataset_name + "/plot_logit.json"]
-threshold_dict = {"age": 3, "gender": "3", "rosbank": "201702", "gender_tinkoff": "27", "age_tinkoff": "27"}
+dataset_name = "age"
+plot_folder = glob.glob("data/" + dataset_name + "/*.json")
+threshold_dict = {"age": 7, "gender": "3", "rosbank": "201702", "gender_tinkoff": "27", "age_tinkoff": "27"}
 threshold = threshold_dict[dataset_name]
 
 for plot in plot_folder:
@@ -66,7 +65,7 @@ for plot in plot_folder:
         capthick=2,
         label="roc auc",
     )
-    print(bce)
+
     ax.errorbar(
         periods,
         np.mean(bce, axis=1),
