@@ -29,7 +29,8 @@ def main(dataset_name: str, clf_type: str):
     dataset = pd.concat([dataset, split_df], axis=1)
 
     X = dataset.loc[:, dataset.columns != "label"]
-    y = dataset.loc[:, dataset.columns == "label"]
+    #y = dataset.loc[:, dataset.columns == "label"]
+    y = dataset["label"].tolist()
 
     # logreg
     logreg = LogisticRegression(max_iter=1000)
@@ -37,7 +38,7 @@ def main(dataset_name: str, clf_type: str):
     y_pred = logreg.predict(X)
     print("Accuracy of logistic regression classifier on train set: {:.2f}".format(logreg.score(X, y)))
     # xgboost
-    xgbmodel = XGBClassifier()
+    xgbmodel = XGBClassifier(use_label_encoder=False, eval_metrics="logloss")
     xgbmodel.fit(X, y)
     y_pred = xgbmodel.predict(X)
     print("Accuracy of xgboost classifier on train set: {:.2f}".format(accuracy_score(y, y_pred)))
@@ -61,7 +62,8 @@ def main(dataset_name: str, clf_type: str):
             dataset.drop(["mcc_ratios", "Unnamed: 0", "client_id"], axis=1, inplace=True)
             dataset = pd.concat([dataset, split_df], axis=1)
             X_test = dataset.loc[:, dataset.columns != "label"]
-            y_true = dataset.loc[:, dataset.columns == "label"]
+            #y_true = dataset.loc[:, dataset.columns == "label"]
+            y_true = dataset["label"].tolist()
             if model == "logit":
                 y_pred = logreg.predict(X_test)
                 y_probs = logreg.predict_proba(X_test)
@@ -99,7 +101,7 @@ def main(dataset_name: str, clf_type: str):
                 bce_loss = log_loss(curr_labels, curr_pred_probs)
                 metrics[period_name]["bce"].append(bce_loss)
 
-        with open(os.path.join("data", dataset_name, "plot_" + model + ".json"), "w") as f:
+        with open(os.path.join("data", dataset_name, "plot_" + model + "_" +dataset_name+ ".json"), "w") as f:
             json.dump(metrics, f, indent=4)
 
 
