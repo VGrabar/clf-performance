@@ -92,9 +92,13 @@ def create_all_sets(folder_name, data, target, threshold_period):
         print(month)
         day_month_year = month.split("/")
         month_name = day_month_year[2] + day_month_year[1]
+        thr_dmy = threshold_period.split("/")
+        thr_name = thr_dmy[2] + thr_dmy[1]
         # cumulative history
         history.append(month)
-        if month > threshold_period:
+        if int(month_name) > int(thr_name):
+            print(month_name)
+            print(thr_name)
             history.pop(0)
         # period_data = data[data["PERIOD"] == month]
         period_data = data[data["PERIOD"].isin(history)]

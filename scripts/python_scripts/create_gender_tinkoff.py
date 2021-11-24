@@ -91,7 +91,7 @@ def create_all_sets(folder_name, data, target, threshold_period):
         period_name = str(per)
         # cumulative history
         history.append(per)
-        if per > threshold_period:
+        if int(per) > int(threshold_period):
             history.pop(0)
         # period_data = data[data["PERIOD"] == per]
         period_data = data[data["PERIOD"].isin(history)]
